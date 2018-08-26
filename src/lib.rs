@@ -246,13 +246,24 @@ impl GlyphCache {
 
         let (screen_width, screen_height) = {
             let (screen_width, screen_height) = display.get_framebuffer_dimensions();
-            (screen_width as f32, screen_height as f32)
+            let (mut screen_width, mut screen_height) = (screen_width as f32, screen_height as f32);
+
+            // We need to change the screen width and height if on a high dpi screen so the font is displayed in the correct place
+            // due to how we set the rendering dpi down in `layout_glphys`. Why 'dpi x 0.75' and not 'x 1.0'? I have no idea.
+            // Possibly something to do with the origin. I'll try to fix it later.
+            if dpi > 1.0 {
+                screen_width *= dpi * 0.75;
+                screen_height *= dpi * 0.75;
+            }
+
+            (screen_width, screen_height)
         };
 
         let uniforms = uniform! {
             sampler: Sampler::new(&self.cache_tex).magnify_filter(MagnifySamplerFilter::Nearest),
-            scale: scale,
-            origin: screen_pos_to_opengl_pos(origin[0] * dpi, origin[1] * dpi, screen_width, screen_height),
+            // Increase the scale by dpi because we lower the at the start of `layout_glphys`
+            scale: scale * dpi,
+            origin: screen_pos_to_opengl_pos(origin[0], origin[1], screen_width, screen_height),
             colour: colour,
         };
 
@@ -273,7 +284,13 @@ impl GlyphCache {
     }
 }
 
-fn layout_glyphs<'a>(text: &'a str, scale: f32, dpi: f32, start: [f32; 2], font: &'a Font, pixelated: bool) -> impl Iterator<Item=PositionedGlyph<'static>> + Clone + 'a {
+fn layout_glyphs<'a>(text: &'a str, scale: f32, mut dpi: f32, start: [f32; 2], font: &'a Font, pixelated: bool) -> impl Iterator<Item=PositionedGlyph<'static>> + Clone + 'a {
+    // As we're rendering to a texture on the gpu that knows nothing about dpi, we want to render pixelated fonts at the regular dpi level,
+    // as rendering them too large can make them look different on high dpi screens and regular dpi screens.
+    if pixelated {
+        dpi = 1.0;
+    }
+
     let scale = Scale::uniform(scale * dpi);
     let start = point(start[0] * dpi, start[1] * dpi + font.v_metrics(scale).ascent);
 
@@ -305,7 +322,7 @@ pub fn rendered_size(text: &str, scale: f32, font: &Font, pixelated: bool, displ
 
     let width = layout_glyphs(text, scale, dpi, [0.0, 0.0], font, pixelated)
         .filter_map(|glyph| glyph.pixel_bounding_box())
-        .fold(0.0_f32, |width, bbox| width.max(bbox.max.x as f32 / dpi));
+        .fold(0.0_f32, |width, bbox| width.max(bbox.max.x as f32));
 
     (width, height)
 }

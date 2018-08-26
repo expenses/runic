@@ -7,7 +7,6 @@ out vec2 out_uv;
 
 uniform vec2 origin;
 uniform float scale;
-uniform float dpi;
 
 void main() {
     vec2 pos = origin + (in_pos - origin) * scale;
