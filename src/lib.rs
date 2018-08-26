@@ -1,3 +1,6 @@
+// Disable the clippy lint about having too many function arguments
+#![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))]
+
 extern crate rusttype;
 extern crate glium;
 extern crate arrayvec;
