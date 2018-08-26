@@ -1,0 +1,9 @@
+[package]
+name = "runic"
+version = "0.1.0"
+authors = ["Ashley <expenses@airmail.cc>"]
+
+[dependencies]
+rusttype = {version = "0", features = ["gpu_cache"]}
+glium = "0"
+arrayvec = "0"
