@@ -25,20 +25,29 @@ fn main() {
     let mut text: String = "Try typing: ".into();
 
     let mut running = true;
+    let mut scale = 2.0;
+
     while running {
         events_loop.poll_events(|event| if let Event::WindowEvent {event, ..} = event {
             match event {
                 WindowEvent::CloseRequested => running = false,
                 // Push characters to the text
-                WindowEvent::ReceivedCharacter(character) => text.push(character),
+                WindowEvent::ReceivedCharacter(character) if character.is_ascii() => text.push(character),
+                WindowEvent::KeyboardInput {input: KeyboardInput {virtual_keycode: Some(key), state: ElementState::Pressed, ..}, ..} => {
+                    match key {
+                        VirtualKeyCode::Up => scale += 1.0,
+                        VirtualKeyCode::Down => scale -= 1.0,
+                        _ => {}
+                    }
+                },
                 _ => {}
             }
         });
 
         let mut target = display.draw();
         target.clear_color(1.0, 1.0, 1.0, 1.0);
-        // The font has a base size of 13, but we want to scale that up by 2
-        cached_font.render_pixelated(&text, [10.0, 10.0], 13.0, 2.0, [0.0, 0.0, 0.0, 1.0], &mut target, &display, &program).unwrap();
+        // The font has a base size of 13, but we want to scale that up
+        cached_font.render_pixelated(&text, [33.3, 33.3], 13.0, scale, [0.0, 0.0, 0.0, 1.0], &mut target, &display, &program).unwrap();
         target.finish().unwrap();
     }
 }

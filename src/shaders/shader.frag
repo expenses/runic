@@ -8,5 +8,6 @@ in vec2 out_uv;
 out vec4 texel;
 
 void main() {
-    texel = colour * vec4(1.0, 1.0, 1.0, texture(sampler, out_uv).r);
+    // Colour the texel by the colour and the multiplied alpha values
+    texel = vec4(colour.rgb, texture(sampler, out_uv).r * colour.a);
 }
