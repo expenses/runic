@@ -43,7 +43,7 @@ fn main() {
         target.clear_color(0.0, 0.0, 0.0, 1.0);
 
         // Get the vertices for the font and make a vertex buffer
-        let vertices = cached_font.get_vertices(&text, [10.0, 10.0], 24.0, false, &display).unwrap();
+        let vertices: Vec<_> = cached_font.get_vertices(&text, [10.0, 10.0], 24.0, false, &display).unwrap().collect();
         let vertex_buffer = VertexBuffer::new(&display, &vertices).unwrap();
 
         // Setup uniforms

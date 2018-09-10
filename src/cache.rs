@@ -94,7 +94,7 @@ impl GlyphCache {
     /// `pixelated`: Whether the font rendered in a pixelated way or not. This will round coverage values etc to make the font look nicer.
     ///
     /// **Tip**: This method for rendering pixelated fonts only really works well when the pixels are at a 1:1 ratio with the screen. I recommend using a shader to scale the rendered text up instead of increasing the font size.
-    pub fn get_vertices<D: Display>(&mut self, text: &str, origin: [f32; 2], scale: f32, font: &Font, font_id: usize, pixelated: bool, display: &D) -> Result<Vec<Vertex>, Error> {
+    pub fn get_vertices<'a, D: Display>(&'a mut self, text: &'a str, origin: [f32; 2], scale: f32, font: &'a Font<'a>, font_id: usize, pixelated: bool, display: &D) -> Result<impl Iterator<Item=Vertex> + 'a, Error> {
         let dpi = display.dpi_factor();
         // Scale the origin and scale by the dpi to get the physical versions (e.g. in pixels)
 
@@ -109,9 +109,9 @@ impl GlyphCache {
         // Create a list of the vertices of glyphs in the cache texture (split into two triangles so we don't need to use and index buffer as well)
         let vertices = glyphs
             .into_iter()
-            .filter_map(|glyph| self.cache.rect_for(font_id, &glyph).ok())
-            .filter_map(|rects| rects)
-            .flat_map(|(uv_rect, screen_rect)| {
+            .filter_map(move |glyph| self.cache.rect_for(font_id, &glyph).ok())
+            .filter_map(move |rects| rects)
+            .flat_map(move |(uv_rect, screen_rect)| {
                 // Scale down the screen rectangle to opengl coordinates.
                 // We don't _need_ to do this here, and could do it in opengl instead, but this makes writing custom shaders easier
                 let gl_rect = screen_rect_to_opengl_rect(screen_rect, screen_width, screen_height, origin);
@@ -136,9 +136,10 @@ impl GlyphCache {
                     in_uv: [uv_rect.max.x, uv_rect.max.y],
                 };
 
-                ArrayVec::from([a, b, c, b, c, d])
-            })
-            .collect();
+                // Arrays, annoying, return Iter<&T> for `into_iter`, so we have to do this
+                let array = [a, b, c, b, c, d];
+                (0 .. array.len()).map(move |i| array[i])
+            });
 
         Ok(vertices)
     }
@@ -153,7 +154,7 @@ impl GlyphCache {
     /// [`get_vertices`]: #method.get_vertices
     pub fn render<S: Surface, D: Display>(&mut self, text: &str, origin: [f32; 2], scale: f32, colour: [f32; 4], font: &Font, font_id: usize, target: &mut S, display: &D, program: &Program) -> Result<(), Error> {
         // Get the vertices and create a vertex buffer
-        let vertices = self.get_vertices(text, origin, scale, font, font_id, false, display)?;
+        let vertices: Vec<_> = self.get_vertices(text, origin, scale, font, font_id, false, display)?.collect();
         let vertex_buffer = VertexBuffer::new(display, &vertices).map_err(Error::BufferCreation)?;
 
         // Create the uniforms
@@ -184,7 +185,7 @@ impl GlyphCache {
         origin[0] *= dpi;
         origin[1] *= dpi;
 
-        let vertices = self.get_vertices(text, origin, font_size, font, font_id, true, display)?;
+        let vertices: Vec<_> = self.get_vertices(text, origin, font_size, font, font_id, true, display)?.collect();
 
         let vertex_buffer = VertexBuffer::new(display, &vertices).map_err(Error::BufferCreation)?;
 

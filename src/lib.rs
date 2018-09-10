@@ -3,7 +3,6 @@
 
 extern crate rusttype;
 extern crate glium;
-extern crate arrayvec;
 
 mod tests;
 mod cache;
@@ -11,7 +10,6 @@ mod cache;
 pub use cache::GlyphCache;
 use cache::*;
 
-use arrayvec::*;
 use rusttype::*;
 use rusttype::gpu_cache::*;
 use glium::texture::*;
@@ -140,7 +138,7 @@ impl<'a> CachedFont<'a> {
         self.cache.render_pixelated(text, origin, font_size, scale, colour, &self.font, 0, target, display, program)
     }
 
-    pub fn get_vertices<D: Display>(&mut self, text: &str, origin: [f32; 2], scale: f32, pixelated: bool, display: &D) -> Result<Vec<Vertex>, Error> {
+    pub fn get_vertices<'b, D: 'b + Display>(&'b mut self, text: &'b str, origin: [f32; 2], scale: f32, pixelated: bool, display: &D) -> Result<impl Iterator<Item=Vertex> + 'b, Error> {
         self.cache.get_vertices(text, origin, scale, &self.font, 0, pixelated, display)
     }
 

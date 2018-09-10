@@ -450,7 +450,6 @@ dependencies = [
 name = "runic"
 version = "0.1.0"
 dependencies = [
- "arrayvec 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "glium 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusttype 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

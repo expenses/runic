@@ -42,11 +42,11 @@ fn test_vertex_gen() {
     let origin_a = [0.0, 0.0];
     let origin_b = [100.0, 666.6];
 
-    let vertices_a = font.get_vertices("Hello World", origin_a, 32.0, false, &display).unwrap();
-    let vertices_b = font.get_vertices("Hello World", origin_b, 32.0, false, &display).unwrap();
+    let vertices_a: Vec<_> = font.get_vertices("Hello World", origin_a, 32.0, false, &display).unwrap().collect();
+    let vertices_b: Vec<_> = font.get_vertices("Hello World", origin_b, 32.0, false, &display).unwrap().collect();
 
-    let vertices_a_pixelated = font.get_vertices("Hello World", origin_a, 32.0, true, &display).unwrap();
-    let vertices_b_pixelated = font.get_vertices("Hello World", origin_b, 32.0, true, &display).unwrap();
+    let vertices_a_pixelated: Vec<_> = font.get_vertices("Hello World", origin_a, 32.0, true, &display).unwrap().collect();
+    let vertices_b_pixelated: Vec<_> = font.get_vertices("Hello World", origin_b, 32.0, true, &display).unwrap().collect();
     
     // Get the difference in opengl coordinates between the two origins
 
