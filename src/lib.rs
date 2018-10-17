@@ -18,6 +18,7 @@ use glium::backend::*;
 use glium::*;
 
 use std::borrow::Cow;
+use std::fmt;
 
 /// The default vertex shader.
 pub const VERT: &str = include_str!("shaders/shader.vert");
@@ -160,6 +161,20 @@ pub enum Error {
     Font(rusttype::Error),
     TextureCreation(TextureCreationError)
 }
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match self {
+            Error::CacheWrite(error) => error.fmt(f),
+            Error::BufferCreation(error) => error.fmt(f),
+            Error::Draw(error) => error.fmt(f),
+            Error::Font(error) => error.fmt(f),
+            Error::TextureCreation(error) => error.fmt(f)
+        }
+    }
+}
+
+impl std::error::Error for Error {}
 
 pub trait Display: Facade + Sized {
     fn dpi_factor(&self) -> f32;
