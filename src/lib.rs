@@ -24,17 +24,10 @@ use std::fmt;
 pub const VERT: &str = include_str!("shaders/shader.vert");
 /// The default fragmentation shader.
 pub const FRAG: &str = include_str!("shaders/shader.frag");
-/// A shader for pixelated fonts.
-pub const PIXELATED_VERT: &str = include_str!("shaders/shader_pixelated.vert");
 
 /// Get the default program for rendering glyphs, which just renders them with a solid colour.
 pub fn default_program<F: Facade>(display: &F) -> Result<Program, ProgramCreationError> {
     Program::from_source(display, VERT, FRAG, None)
-}
-
-/// Get the default program for rendering pixelated fonts.
-pub fn pixelated_program<F: Facade>(display: &F) -> Result<Program, ProgramCreationError> {
-    Program::from_source(display, PIXELATED_VERT, FRAG, None)
 }
 
 fn screen_pos_to_opengl_pos(position: [f32; 2], screen_width: f32, screen_height: f32) -> [f32; 2] {
@@ -132,11 +125,13 @@ impl<'a> CachedFont<'a> {
     ///
     /// [`GlyphCache::get_vertices`]: struct.GlyphCache.html#method.get_vertices
     pub fn render<S: Surface, D: Display>(&mut self, text: &str, origin: [f32; 2], scale: f32, colour: [f32; 4], target: &mut S, display: &D, program: &Program) -> Result<(), Error> {
-        self.cache.render(text, origin, scale, colour, &self.font, 0, target, display, program)
+        let vertices: Vec<_> = self.cache.get_vertices(text, origin, scale, &self.font, 0, false, display)?.collect();
+        self.cache.render_vertices(&vertices, colour, target, display, program, false)
     }
 
     pub fn render_pixelated<S: Surface, D: Display>(&mut self, text: &str, origin: [f32; 2], font_size: f32, scale: f32, colour: [f32; 4], target: &mut S, display: &D, program: &Program) -> Result<(), Error> {
-        self.cache.render_pixelated(text, origin, font_size, scale, colour, &self.font, 0, target, display, program)
+        let vertices: Vec<_> = self.cache.get_pixelated_vertices(text, origin, font_size, scale, &self.font, 0, display)?.collect();
+        self.cache.render_vertices(&vertices, colour, target, display, program, true)
     }
 
     pub fn get_vertices<'b, D: 'b + Display>(&'b mut self, text: &'b str, origin: [f32; 2], scale: f32, pixelated: bool, display: &D) -> Result<impl Iterator<Item=Vertex> + 'b, Error> {
@@ -149,6 +144,14 @@ impl<'a> CachedFont<'a> {
 
     pub fn rendered_height(&self, scale: f32) -> f32 {
         rendered_height(&self.font, scale)
+    }
+
+    pub fn render_vertices<S: Surface, D: Display>(&self, vertices: &[Vertex], colour: [f32; 4], target: &mut S, display: &D, program: &Program, pixelated: bool) -> Result<(), Error> {
+        self.cache.render_vertices(vertices, colour, target, display, program, pixelated)
+    }
+
+    pub fn get_pixelated_vertices<'b, D: 'b + Display>(&'b mut self, text: &'b str, origin: [f32; 2], font_size: f32, scale: f32, display: &D) -> Result<impl Iterator<Item=Vertex> + 'b, Error> {
+        self.cache.get_pixelated_vertices(text, origin, font_size, scale, &self.font, 0, display)
     }
 }
 

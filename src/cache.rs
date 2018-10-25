@@ -144,22 +144,45 @@ impl GlyphCache {
         Ok(vertices)
     }
 
-    /// A helper function to render text out to a target using a shader pipeline.
-    ///
-    /// If you want more control over rendering in regards to uniforms and the like, you can [`get_vertices`] to get the vertices
-    /// for rendering.
-    ///
-    /// See [`get_vertices`] for infomation on the arguments.
-    ///
-    /// [`get_vertices`]: #method.get_vertices
-    pub fn render<S: Surface, D: Display>(&mut self, text: &str, origin: [f32; 2], scale: f32, colour: [f32; 4], font: &Font, font_id: usize, target: &mut S, display: &D, program: &Program) -> Result<(), Error> {
-        // Get the vertices and create a vertex buffer
-        let vertices: Vec<_> = self.get_vertices(text, origin, scale, font, font_id, false, display)?.collect();
+    pub fn get_pixelated_vertices<'a, D: Display + 'a>(&'a mut self, text: &'a str, mut origin: [f32; 2], font_size: f32, scale: f32, font: &'a Font<'a>, font_id: usize, display: &D) -> Result<impl Iterator<Item=Vertex> + 'a, Error> {
+        let dpi = display.dpi_factor();
+        origin[0] *= dpi;
+        origin[1] *= dpi;
+
+        let vertices = self.get_vertices(text, origin, font_size, font, font_id, true, display)?;
+
+        let (screen_width, screen_height) = {
+            let (screen_width, screen_height) = display.framebuffer_dimensions();
+            (screen_width as f32, screen_height as f32)
+        };
+
+        let origin = screen_pos_to_opengl_pos(origin, screen_width, screen_height);
+
+        Ok(
+            vertices
+                .map(move |mut vertex| {
+                    vertex.in_pos = [
+                        origin[0] + (vertex.in_pos[0] - origin[0]) * scale * dpi,
+                        origin[1] + (vertex.in_pos[1] - origin[1]) * scale * dpi
+                    ];
+
+                    vertex
+                })
+        )
+    }
+
+    pub fn render_vertices<S: Surface, D: Display>(&self, vertices: &[Vertex], colour: [f32; 4], target: &mut S, display: &D, program: &Program, pixelated: bool) -> Result<(), Error> {
         let vertex_buffer = VertexBuffer::new(display, &vertices).map_err(Error::BufferCreation)?;
+
+        let mut sampler = Sampler::new(&self.cache_tex);
+
+        if pixelated {
+            sampler = sampler.magnify_filter(MagnifySamplerFilter::Nearest);
+        }
 
         // Create the uniforms
         let uniforms = uniform! {
-            sampler: Sampler::new(&self.cache_tex),
+            sampler: sampler,
             colour: colour
         };
 
@@ -173,49 +196,7 @@ impl GlyphCache {
                 blend: glium::Blend::alpha_blending(),
                 ..Default::default()
             }
-        ).map_err(Error::Draw)?;
-
-        Ok(())
-    }
-
-    pub fn render_pixelated<S: Surface, D: Display>(&mut self, text: &str, mut origin: [f32; 2], font_size: f32, scale: f32, colour: [f32; 4], font: &Font, font_id: usize, target: &mut S, display: &D, program: &Program) -> Result<(), Error> {
-        let dpi = display.dpi_factor();
-      
-        // Multiply the origin by the dpi because of reasons to do with the `layout_glyphs` thing.
-        origin[0] *= dpi;
-        origin[1] *= dpi;
-
-        let vertices: Vec<_> = self.get_vertices(text, origin, font_size, font, font_id, true, display)?.collect();
-
-        let vertex_buffer = VertexBuffer::new(display, &vertices).map_err(Error::BufferCreation)?;
-
-        let (screen_width, screen_height) = {
-            let (screen_width, screen_height) = display.framebuffer_dimensions();
-            (screen_width as f32, screen_height as f32)
-        };
-
-        let uniforms = uniform! {
-            // Set the magnify filter to nearest as the shader is going to upscale the text by the scale
-            sampler: Sampler::new(&self.cache_tex).magnify_filter(MagnifySamplerFilter::Nearest),
-            // Increase the scale by dpi because we lower the at the start of `layout_glyphs`
-            scale: scale * dpi,
-            // Translate the origin down to opengl coordinates
-            origin: screen_pos_to_opengl_pos(origin, screen_width, screen_height),
-            colour: colour,
-        };
-
-        target.draw(
-            &vertex_buffer,
-            glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
-            program,
-            &uniforms,
-            &glium::DrawParameters {
-                blend: glium::Blend::alpha_blending(),
-                ..Default::default()
-            }
-        ).map_err(Error::Draw)?;
-
-        Ok(())
+        ).map_err(Error::Draw)
     }
 }
 

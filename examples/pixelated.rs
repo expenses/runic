@@ -18,7 +18,7 @@ fn main() {
     let display = glium::Display::new(window, context, &events_loop).unwrap();
 
     // Use the pixelated program for rendering fonts
-    let program = runic::pixelated_program(&display).unwrap();
+    let program = runic::default_program(&display).unwrap();
     // Create a cached font
     let mut cached_font = runic::CachedFont::from_bytes(include_bytes!("fonts/TinyUnicode.ttf"), &display).unwrap();
 
