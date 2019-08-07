@@ -56,7 +56,7 @@ impl GlyphCache {
         self.cache.cache_queued(|rect, data| {
             // If we're using a pixelated font we need to round the coverage values
             let data = if pixelated {
-                Cow::Owned(data.into_iter().map(|value| if *value > 128 {255} else {0}).collect())
+                Cow::Owned(data.iter().map(|value| if *value > 128 {255} else {0}).collect())
             } else {
                 Cow::Borrowed(data)
             };
@@ -108,7 +108,6 @@ impl GlyphCache {
 
         // Create a list of the vertices of glyphs in the cache texture (split into two triangles so we don't need to use and index buffer as well)
         let vertices = glyphs
-            .into_iter()
             .filter_map(move |glyph| self.cache.rect_for(font_id, &glyph).ok())
             .filter_map(move |rects| rects)
             .flat_map(move |(uv_rect, screen_rect)| {
