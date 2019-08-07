@@ -12,7 +12,7 @@ out vec4 texel;
 void main() {
     float value = texture(sampler, out_uv).r;
 
-    float random = noise1(gl_FragCoord.x/10 + time) + noise1(gl_FragCoord.y/10 + time);
+    float random = noise1((gl_FragCoord + time) / 10);
     
     if (random > 0.5) {
         texel = vec4(1.0, 1.0, 1.0, value);

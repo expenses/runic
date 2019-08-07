@@ -21,18 +21,27 @@ fn test_position() {
 #[test]
 fn compile_shaders() {
     use glium::glutin::*;
+    use glium::glutin::dpi::*;
     use glium::backend::glutin::headless::*;
-    let context = HeadlessRendererBuilder::new(1000, 1000).build().unwrap();
+    
+    let context_builder = ContextBuilder::new();
+    let event_loop = EventsLoop::new();
+    let context = context_builder.build_headless(&event_loop, PhysicalSize::new(1000.0, 1000.0)).unwrap();
+    
     let display = Headless::new(context).unwrap();
     default_program(&display).unwrap();
-    pixelated_program(&display).unwrap();
 }
 
 #[test]
 fn test_vertex_gen() {
     use glium::glutin::*;
+    use glium::glutin::dpi::*;
     use glium::backend::glutin::headless::*;
-    let context = HeadlessRendererBuilder::new(1000, 1000).build().unwrap();
+    
+    let context_builder = ContextBuilder::new();
+    let event_loop = EventsLoop::new();
+    let context = context_builder.build_headless(&event_loop, PhysicalSize::new(1000.0, 1000.0)).unwrap();
+
     let display = Headless::new(context).unwrap();    
     let mut font = CachedFont::from_bytes(include_bytes!("../examples/fonts/WenQuanYiMicroHei.ttf"), &display).unwrap();
 

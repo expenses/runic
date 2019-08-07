@@ -186,7 +186,7 @@ pub trait Display: Facade + Sized {
 
 impl Display for glium::Display {
     fn dpi_factor(&self) -> f32 {
-        self.gl_window().get_hidpi_factor() as f32
+        self.gl_window().window().get_hidpi_factor() as f32
     }
 
     fn framebuffer_dimensions(&self) -> (u32, u32) {
